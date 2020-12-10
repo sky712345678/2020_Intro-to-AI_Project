@@ -1,30 +1,30 @@
-*.weights
-*.o
-*.a
-*.dSYM
-*.csv
-*.out
-*.png
-*.so
-*.exe
-*.dll
-*.lib
-*.dylib
-mnist/
+# *.weights
+# *.o
+# *.a
+# *.dSYM
+# *.csv
+# *.out
+# *.png
+# *.so
+# *.exe
+# *.dll
+# *.lib
+# *.dylib
+# mnist/
 # data/
-caffe/
-grasp/
-images/
-opencv/
-convnet/
-decaf/
-submission/
+# caffe/
+# grasp/
+# images/
+# opencv/
+# convnet/
+# decaf/
+# submission/
 # cfg/
 # build/darknet/*
 # build_*/
 # !build/darknet/YoloWrapper.cs
-.fuse*
-*.weights
+# .fuse*
+# *.weights
 # build/*.cmake
 # build/*.ninja
 # build/*.txt
