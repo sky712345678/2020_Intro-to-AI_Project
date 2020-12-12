@@ -52,13 +52,14 @@ class TimeCollector(object):
         for (time, objects) in self.data_collected:
             if "person" in objects.keys():
                 self.timestamp.append(time)
-             
+                
         # seek again
         seeker = 0 # 搜索指針
         analyzed_data = [] # 回傳資料
         for (time, objects) in self.data_collected:
             # 計算距離下個時間戳記的差值
-            analyzed_data.append((time, objects, int(self.timestamp[seeker] - time) ))
+            nt = int((self.timestamp[seeker] - time)/60)
+            analyzed_data.append((int(time / 60), objects, nt ))
             
             if time == self.timestamp[seeker]:
                 seeker += 1            
@@ -75,23 +76,38 @@ class TimeMarker(object):
     int_minuteGate = 40
     filepath = os.path.dirname(os.path.dirname(__file__))
     categories = ['person','bicycle','car','motorcycle','airplane','bus','train','truck','boat','trafficlight','firehydrant','stopsign','parkingmeter','bench','bird','cat','dog','horse','sheep','cow','elephant','bear','zebra','giraffe','backpack','umbrella','handbag','tie','suitcase','frisbee','skis','snowboard','sportsball','kite','baseballbat','baseballglove','skateboard','surfboard','tennisracket','bottle','wineglass','cup','fork','knife','spoon','bowl','banana','apple','sandwich','orange','broccoli','carrot','hotdog','pizza','donut','cake','chair','couch','pottedplant','bed','diningtable','toilet','tv','laptop','mouse','remote','keyboard','cellphone','microwave','oven','toaster','sink','refrigerator','book','clock','vase','scissors','teddybear','hairdrier','toothbrush','aeroplane','bicycle','bird','boat','bottle','bus','car','cat','chair','cow','diningtable','dog','horse','motorbike','pottedplant','sheep','sofa','train','tvmonitor']
+    print(len(categories))
     categories = list(set(categories))
     
     def __init__(self, analyzed_data):
         import numpy as np
         x = []
         y = []
+        
         def Tolist(az):
-            ret = [0]*len(self.categories)
+            """把dict 轉成 one-hot list"""
+            ret = [float(0)]*len(self.categories)
             for index, id in enumerate(self.categories):
                 if id in az.keys():
-                    ret[index] = 1
+                    ret[index] = float(1)
             return ret
-        for (t, az, nt) in analyzed_data:
-            x.append([t] + Tolist(az))
-            y.append([1 if nt > self.int_minuteGate else 0])
-        print(x)
-        print(y)
+        
+        switch = False
+        
+        cntr = [0, 0]
+        for (t, az, nt) in analyzed_data: # time, analyze , next time
+            if 'person' in az:
+                switch = True
+            x.append([float(t)] + Tolist(az))
+            if nt > self.int_minuteGate or switch is False:
+                if not 'person' in az:
+                    y.append([float(0)])
+                    cntr[0] += 1
+                switch = False
+            else:
+                y.append([float(1)])
+                cntr[1] += 1
+        print(cntr[0] / (cntr[0] + cntr[1]))
         np.savez('./data.npz', x = x, y = y)
 
 if __name__ == "__main__":
