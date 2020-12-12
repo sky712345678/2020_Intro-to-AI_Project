@@ -61,11 +61,11 @@ class BuildModel(nn.Module):
 
         # ----------------------------------------------
         # 初始化模型的 layer (input size: 3 * 224 * 224)
-        in_channels = 85
+        in_channels = 84
 
         layers = []
 
-        net_arch = [64, 128, 256, 'FC']
+        net_arch = [128, 64, 32, 'FC']
         for arch in net_arch:
             if arch == "FC":
                 layers.append(nn.Sigmoid())
@@ -100,14 +100,14 @@ ModelPath = './model'
 model = torch.load(ModelPath) if os.path.exists(ModelPath) else BuildModel()
 
 C = model.to(device)  # 使用 model
-optimizer_C = optim.SGD(C.parameters(), lr=lr)  #  optimizer
+optimizer_C = optim.Adam(C.parameters(), lr=lr)  #  optimizer
 
 # 利用 torchsummary 的 summary package 印出模型資訊，input size: (3 * 224 * 224)
-classes = 85
+classes = 84
 summary(model, (1, classes))
 
 # Loss function
-criteron = nn.MSELoss()  # 選擇想用的 loss function
+criteron = nn.L1Loss()  # 選擇想用的 loss function
 
 loss_epoch_C = []
 train_acc, test_acc = [], []
@@ -170,7 +170,8 @@ if __name__ == '__main__':
 
                 output = C(x)  # 將訓練資料輸入至模型進行訓練
                 loss = criteron(output, label)  # 計算 loss
-
+                print(output.T)
+                print(label.T)
                 predicted = torch.round(output.data)
                 
                 total_test += label.size(0)

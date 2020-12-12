@@ -98,7 +98,7 @@ class TimeMarker(object):
         for (t, az, nt) in analyzed_data: # time, analyze , next time
             if 'person' in az:
                 switch = True
-            x.append([float(t)] + Tolist(az))
+            x.append(Tolist(az))
             if nt > self.int_minuteGate or switch is False:
                 if not 'person' in az:
                     y.append([float(0)])
@@ -107,6 +107,7 @@ class TimeMarker(object):
             else:
                 y.append([float(1)])
                 cntr[1] += 1
+        print(x)
         print(cntr[0] / (cntr[0] + cntr[1]))
         np.savez('./data.npz', x = x, y = y)
 
