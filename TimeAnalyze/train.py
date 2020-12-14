@@ -170,8 +170,6 @@ if __name__ == '__main__':
 
                 output = C(x)  # 將訓練資料輸入至模型進行訓練
                 loss = criteron(output, label)  # 計算 loss
-                print(output.T)
-                print(label.T)
                 predicted = torch.round(output.data)
                 
                 total_test += label.size(0)
