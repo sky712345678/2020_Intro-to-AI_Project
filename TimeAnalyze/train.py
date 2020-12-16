@@ -53,6 +53,8 @@ def split_Train_Val_Data():
 
 ###### Model #####
 
+classes = 84
+
 class BuildModel(nn.Module):
 
     def __init__(self):
@@ -61,11 +63,11 @@ class BuildModel(nn.Module):
 
         # ----------------------------------------------
         # 初始化模型的 layer (input size: 3 * 224 * 224)
-        in_channels = 84
+        in_channels = classes
 
         layers = []
 
-        net_arch = [128, 64, 32, 'FC']
+        net_arch = [128,256,512, 'FC']
         for arch in net_arch:
             if arch == "FC":
                 layers.append(nn.Sigmoid())
@@ -103,7 +105,6 @@ C = model.to(device)  # 使用 model
 optimizer_C = optim.Adam(C.parameters(), lr=lr)  #  optimizer
 
 # 利用 torchsummary 的 summary package 印出模型資訊，input size: (3 * 224 * 224)
-classes = 84
 summary(model, (1, classes))
 
 # Loss function
@@ -119,10 +120,16 @@ testing_acc = 0
 ##### training #####
 dtype = torch.float32
 
+def L1Norm(model):
+    L1_reg = torch.tensor(0., requires_grad=True)
+    for name, param in model.named_parameters():
+        if 'weight' in name:
+            L1_reg = L1_reg + torch.norm(param, 1)
+    return L1_reg
 
 if __name__ == '__main__':
     #for epoch in range(epochs):
-    while testing_acc < 90 or epoch < 20:
+    while testing_acc < 95 or epoch < 100:
         torch.save(C, ModelPath)
         
         iter = 0
@@ -136,24 +143,25 @@ if __name__ == '__main__':
         # ---------------------------
         # Training Stage
         # ---------------------------
-        for i, (x, label) in enumerate(train_dataloader):
+        for i, (x, label) in enumerate(train_dataloader):            
             x, label = x.to(device, dtype=torch.float), label.to(device, dtype=dtype)
 
             optimizer_C.zero_grad()  # 清空梯度
             output = C(x)  # 將訓練資料輸入至模型進行訓練
 
-            loss = criteron(output, label)  # 計算 loss
+            loss = criteron(output, label)# 計算 loss
 
             loss.backward()  # 將 loss 反向傳播
             optimizer_C.step()  # 更新權重
 
             # 計算訓練資料的準確度 (correct_train / total_train)
-            predicted = torch.round(output.data)
+            predicted = torch.abs(torch.round(output.data))
             total_train += label.size(0)
             correct_train += (predicted == label.data).sum().item()
                 
             train_loss_C += loss.item()
             iter += 1
+            
 
         print('Training epoch: %d / loss_C: %.3f | acc: %.3f' %
               (epoch + 1, train_loss_C / iter, correct_train / total_train))
@@ -169,8 +177,9 @@ if __name__ == '__main__':
                 x, label = x.to(device, dtype=torch.float), label.to(device, dtype=dtype)
 
                 output = C(x)  # 將訓練資料輸入至模型進行訓練
-                loss = criteron(output, label)  # 計算 loss
-                predicted = torch.round(output.data)
+                
+                loss = criteron(output, label)# 計算 loss
+                predicted = torch.abs(torch.round(output.data))
                 
                 total_test += label.size(0)
                 correct_test += (predicted == label.data).sum().item()

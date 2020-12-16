@@ -1,6 +1,6 @@
 import json, os
 import time
-datapath = os.path.dirname(os.path.dirname(__file__)) + '\\result.json'
+datapath = os.path.dirname(os.path.dirname(__file__)) + '\\Maskrcnn_result.json'
 Analyze_Threshold = 0
 
 class TimeCollector(object):
@@ -95,14 +95,14 @@ class TimeMarker(object):
         switch = False
         
         cntr = [0, 0]
+        
         for (t, az, nt) in analyzed_data: # time, analyze , next time
             if 'person' in az:
                 switch = True
             x.append(Tolist(az))
             if nt > self.int_minuteGate or switch is False:
-                if not 'person' in az:
-                    y.append([float(0)])
-                    cntr[0] += 1
+                y.append([float(0)])
+                cntr[0] += 1
                 switch = False
             else:
                 y.append([float(1)])
