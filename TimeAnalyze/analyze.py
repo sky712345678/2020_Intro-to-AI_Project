@@ -1,13 +1,12 @@
 import json, os
 import time
-datapath = os.path.dirname(os.path.dirname(__file__)) + '\\Maskrcnn_result.json'
+import glob
 Analyze_Threshold = 0
-
 class TimeCollector(object):
     timestamp = []
     data_collected = []
     
-    def __init__(self):
+    def __init__(self, datapath):
         super().__init__()
         with open(datapath, 'r', encoding='utf8') as f:
             lines = f.read().replace('\n', '')
@@ -79,7 +78,7 @@ class TimeMarker(object):
     print(len(categories))
     categories = list(set(categories))
     
-    def __init__(self, analyzed_data):
+    def __init__(self, analyzed_data, path):
         import numpy as np
         x = []
         y = []
@@ -109,8 +108,11 @@ class TimeMarker(object):
                 cntr[1] += 1
         print(x)
         print(cntr[0] / (cntr[0] + cntr[1]))
-        np.savez('./data.npz', x = x, y = y)
+        np.savez(path, x = x, y = y)
 
 if __name__ == "__main__":
-    ti = TimeCollector()
-    tm = TimeMarker(ti.analyzed_data)
+    os.chdir('./TimeAnalyze/data')   
+    for file in glob.glob("*.json"):
+        print(file)
+        ti = TimeCollector(file)
+        tm = TimeMarker(ti.analyzed_data, f'./{file}.npz')

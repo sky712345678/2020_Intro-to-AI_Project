@@ -10,14 +10,19 @@ from torch.utils.data import Dataset, random_split, DataLoader, TensorDataset
 
 import os
 import json
+import glob
 # import matplotlib.pyplot as plt
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+batch_size = 64
+lr = 1e-3
+epochs = 200
+
 ##### data #####
 
-def split_Train_Val_Data():
-    dataset = np.load('./data.npz')
+def Split_Train_Val_Data(path):
+    dataset = np.load(path)
     x = dataset['x'].tolist()
     y = dataset['y'].tolist()
     
@@ -57,7 +62,7 @@ classes = 84
 
 class BuildModel(nn.Module):
 
-    def __init__(self):
+    def __init__(self, net_arch):
         super(BuildModel, self).__init__()
         self.layers = []
 
@@ -66,8 +71,7 @@ class BuildModel(nn.Module):
         in_channels = classes
 
         layers = []
-
-        net_arch = [128,256,512, 'FC']
+        
         for arch in net_arch:
             if arch == "FC":
                 layers.append(nn.Sigmoid())
@@ -92,30 +96,6 @@ class BuildModel(nn.Module):
         return out
 
 
-batch_size = 64
-lr = 1e-3
-epochs = 500
-
-train_dataloader, test_dataloader = split_Train_Val_Data()
-
-ModelPath = './model'
-model = torch.load(ModelPath) if os.path.exists(ModelPath) else BuildModel()
-
-C = model.to(device)  # 使用 model
-optimizer_C = optim.Adam(C.parameters(), lr=lr)  #  optimizer
-
-# 利用 torchsummary 的 summary package 印出模型資訊，input size: (3 * 224 * 224)
-summary(model, (1, classes))
-
-# Loss function
-criteron = nn.L1Loss()  # 選擇想用的 loss function
-
-loss_epoch_C = []
-train_acc, test_acc = [], []
-best_acc, best_auc = 0.0, 0.0
-
-epoch = 0
-testing_acc = 0
 
 ##### training #####
 dtype = torch.float32
@@ -124,13 +104,34 @@ def L1Norm(model):
     L1_reg = torch.tensor(0., requires_grad=True)
     for name, param in model.named_parameters():
         if 'weight' in name:
-            L1_reg = L1_reg + torch.norm(param, 1)
+            L1_reg = L1_reg + torch.norm(param, 1)*1e-5
     return L1_reg
 
-if __name__ == '__main__':
+def Train(split_Train_Val_Data, model, criteron = nn.L1Loss(), Norm = None, path = './record_mymodel.csv'):
+        
+    train_dataloader, test_dataloader = split_Train_Val_Data
+
+    C = model.to(device)  # 使用 model
+    optimizer_C = optim.Adam(C.parameters(), lr=lr)  #  optimizer
+
+    # 利用 torchsummary 的 summary package 印出模型資訊，input size: (3 * 224 * 224)
+    summary(model, (1, classes))
+
+    # Loss function
+    # criteron = nn.L1Loss()  # 選擇想用的 loss function
+
+    loss_epoch_C = []
+    train_acc, test_acc = [], []
+    best_acc, best_auc = 0.0, 0.0
+
+    epoch = 0
+    testing_acc = 0
+    
+    with open(path, 'w', encoding='utf8') as f:
+        f.write("Train acc,Test acc,loss\n")
+            
     #for epoch in range(epochs):
-    while testing_acc < 95 or epoch < 100:
-        torch.save(C, ModelPath)
+    while epoch < epochs:
         
         iter = 0
         correct_train, total_train = 0, 0
@@ -149,8 +150,9 @@ if __name__ == '__main__':
             optimizer_C.zero_grad()  # 清空梯度
             output = C(x)  # 將訓練資料輸入至模型進行訓練
 
-            loss = criteron(output, label)# 計算 loss
-
+            
+            loss = criteron(output, label) if Norm is None else criteron(output, label) + Norm(model) # 計算 loss
+                
             loss.backward()  # 將 loss 反向傳播
             optimizer_C.step()  # 更新權重
 
@@ -190,8 +192,17 @@ if __name__ == '__main__':
         test_acc.append(100 * (correct_test / total_test))  # testing accuracy
         loss_epoch_C.append(train_loss_C / iter)  # loss
     
-        with open('./record_mymodel.csv', 'a', encoding='utf8') as f:
+        with open(path, 'a', encoding='utf8') as f:
             f.write(f"{100 * (correct_train / total_train)},{100 * (correct_test / total_test)},{train_loss_C / iter}\n")
             
         testing_acc = 100 * correct_test / total_test
         epoch += 1
+        
+
+os.chdir('./TimeAnalyze/data/npz')   
+for file in glob.glob("*.npz"):
+    print(file)
+    Train(Split_Train_Val_Data(file), BuildModel([16,32,64,'FC']), nn.L1Loss(), L1Norm, f'./result/{file}_L1_L1.csv')
+    Train(Split_Train_Val_Data(file), BuildModel([16,32,64,'FC']), nn.MSELoss(), L1Norm, f'./result/{file}_L2_L1.csv')
+    Train(Split_Train_Val_Data(file), BuildModel([16,32,64,'FC']), nn.L1Loss(), None, f'./result/{file}_L1_No.csv')
+    Train(Split_Train_Val_Data(file), BuildModel([16,32,64,'FC']), nn.MSELoss(), None, f'./result/{file}_L2_No.csv')
