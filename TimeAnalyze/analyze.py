@@ -115,4 +115,4 @@ if __name__ == "__main__":
     for file in glob.glob("*.json"):
         print(file)
         ti = TimeCollector(file)
-        tm = TimeMarker(ti.analyzed_data, f'./{file}.npz')
+        tm = TimeMarker(ti.analyzed_data, f'./npz/{file}.npz')

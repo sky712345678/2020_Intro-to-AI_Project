@@ -2,8 +2,8 @@ import os
 import glob
 
 os.chdir('./TimeAnalyze/data/npz/result')  
-index = [str(i) for i in range(1,201)]
-writeback = [f"name,{','.join(index)}\n"]
+index = [str(i) for i in range(1,51)]
+writeback = [f"name,kind,{','.join(index)}\n"]
 
 for file in glob.glob("*.csv"):
     data = [[], []]

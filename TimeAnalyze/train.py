@@ -17,7 +17,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 batch_size = 64
 lr = 1e-3
-epochs = 200
+epochs = 50
 
 ##### data #####
 
